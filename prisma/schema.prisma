@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  MEMBER
+}
+
+enum Format {
+  PHYSICAL
+  DIGITAL
+  BOTH
+}
+
+enum TransactionType {
+  BORROW
+  RETURN
+}
+
+enum TransactionStatus {
+  ON_LOAN
+  RETURNED
+  LATE
+}
+
+model User {
+  id         String       @id @default(uuid()) @db.VarChar(36)
+  name       String
+  email      String       @unique
+  password   String
+  role       Role         @default(MEMBER)
+  transactions Transaction[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model Publisher {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  name      String
+  address   String?
+  phone     String?
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Author {
+  id        String       @id @default(uuid()) @db.VarChar(36)
+  name      String
+  bio       String?
+  books     BookAuthor[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Category {
+  id        String         @id @default(uuid()) @db.VarChar(36)
+  name      String         @unique
+  books     BookCategory[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model Book {
+  id           String          @id @default(uuid()) @db.VarChar(36)
+  title        String
+  isbn         String?         @unique
+  description  String?
+  coverUrl     String?
+  publishYear  Int?
+  format       Format          @default(PHYSICAL)
+  fileUrl      String?
+  publisherId  String?         @db.VarChar(36)
+  publisher    Publisher?      @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  stock        Int?             // use for physical stock
+  authors      BookAuthor[]
+  categories   BookCategory[]
+  items        TransactionItem[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([title])
+}
+
+// Explicit many-to-many join table for Book <-> Author
+model BookAuthor {
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  bookId String @db.VarChar(36)
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String @db.VarChar(36)
+
+  @@id([bookId, authorId])
+  @@index([authorId])
+}
+
+// Explicit many-to-many join table for Book <-> Category
+model BookCategory {
+  book     Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  bookId   String   @db.VarChar(36)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String @db.VarChar(36)
+
+  @@id([bookId, categoryId])
+  @@index([categoryId])
+}
+
+model Transaction {
+  id              String            @id @default(uuid()) @db.VarChar(36)
+  userId          String            @db.VarChar(36)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            TransactionType
+  transactionDate DateTime          @default(now())
+  dueDate         DateTime?
+  status          TransactionStatus @default(ON_LOAN)
+  items           TransactionItem[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TransactionItem {
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String      @db.VarChar(36)
+  book          Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  bookId        String      @db.VarChar(36)
+  quantity      Int         @default(1)
+
+  @@id([transactionId, bookId])
+  @@index([bookId])
+}
