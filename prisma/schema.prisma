@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  // Connection URL moved to `src/prisma.config.ts`. Do not set `url` here with Prisma 7+.
 }
 
 enum Role {

@@ -22,7 +22,10 @@
   "homepage": "https://github.com/raafathar/book-dashboard#readme",
   "dependencies": {
     "@prisma/client": "^6.19.0",
-    "express": "^5.1.0"
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0",
+    "http-status-codes": "^2.3.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/express": "^5.0.5",
